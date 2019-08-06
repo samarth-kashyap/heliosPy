@@ -62,6 +62,17 @@ def locatefreq(freq, freqloc):
 	return ind
 
 def loadnorms(l, n, year):
+	'''
+	Returns the norms for a given l, n, year
+
+	Inputs:
+		l - spherical harmonic degree
+		n - radial order
+		year - year number of HMI data
+	
+	Outputs:
+		norm - value of the norm C_{nl}
+	'''
 	path = '/scratch/samarth/HMItemp/norms/'
 	prefix = 'HMI_'
 	suffix = '_year_0' + str(year)
