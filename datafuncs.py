@@ -1,3 +1,9 @@
+from __future__ import print_function
+import numpy as np
+from math import sqrt, pi
+from numpy.polynomial.legendre import legval
+from astropy.io import fits
+
 twopiemin6 = 2*pi*1e-6
 
 def findfreq(data, l, n, m):
@@ -85,7 +91,7 @@ def loadnorms(l, n, year):
 		return None;
 
 	if norms.size==2:
-		if n==0:
+		if norms[1]==n:
 			return norms[0]
 		else:
 			print("Norm NOT FOUND for l = %2s, n = %1s, year = %1s" %(l, n, year))
@@ -97,3 +103,29 @@ def loadnorms(l, n, year):
 			print("Norm NOT FOUND for l = %2s, n = %1s, year = %1s" %(l, n, year))
 			return None;
 		return norms[ind, 0]
+
+def loadHMIdata(l, day=6328, nyears=1):
+	'''
+	Loads time series for a given number of years, 
+	by concatenating the required number of 72-day datasets.
+	Returns the IFFT of the concatenated time series.
+	Inputs:
+		l			- (int)	spherical harmonic degree
+		day		- (int) starting day of time series
+		nyears- (int) total number of years
+	Outputs:
+		phi_{l} - (np.ndarray, ndim = 2)[m, omega], frequency series for different m
+	'''
+	daynum = int(nyears*365/72)
+	if daynum<1:
+		daynum=1
+	for i in xrange(daynum):
+		daynew = day + i*72;
+		print("Reading "+'/scratch/jishnu/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')
+		temp = fits.open('/scratch/jishnu/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')[1].data
+		if i==0:
+			tempnew = temp
+		else:
+			tempnew = np.concatenate((tempnew, temp), axis=1)
+	return np.fft.ifft(tempnew[:, 0::2] - 1j*tempnew[:, 1::2], axis=1)
+
