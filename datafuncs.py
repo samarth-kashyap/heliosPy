@@ -1,4 +1,13 @@
-from __future__ import print_function
+'''
+findfreq(data, l, n, m)
+lorentzian(omega, fwhm, omegaList)
+locatefreq(freq, freqloc)
+loadnorms(l, n, year)
+loadHMIdata_concat(l, dat, nyears)
+loadHMIdata_avg(l, day, num)
+separatefreq(phi)
+'''
+
 import numpy as np
 import sys
 from math import sqrt, pi
@@ -126,7 +135,7 @@ def loadHMIdata_concat(l, day=6328, nyears=1):
 	daynum = int(nyears*365/72)
 	if daynum<1:
 		daynum=1
-	for i in xrange(daynum):
+	for i in range(daynum):
 		daynew = day + i*72;
 		print("Reading "+'/scratch/jishnu/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')
 		temp = fits.open('/scratch/jishnu/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')[1].data
@@ -153,7 +162,7 @@ def loadHMIdata_avg(l, day=6328, num=1):
 		print("AssertionError: While calling loadHMIdata_avg(l, day, num) --> num has to be a positive number")
 		sys.exit()
 	
-	for i in xrange(num):
+	for i in range(num):
 		daynew = day + i*72;
 		print("Reading "+'/scratch/jishnu/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')
 		tempopen = fits.open('/scratch/jishnu/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')
@@ -165,3 +174,22 @@ def loadHMIdata_avg(l, day=6328, num=1):
 			tempnew += temp
 	tempnew /= num
 	return np.fft.ifft(tempnew[:, 0::2] - 1j*tempnew[:, 1::2], axis=1)
+
+def separatefreq(phi):
+	freqshape = phi.shape[1]
+	phiplus = phi[:, :freqshape]
+	phiminus = phi[:, freqshape:]
+	phiminus = phi[:, ::-1]
+	return phiplus, phiminus
+
+def derotate(phi, l, daynum, pm):
+	data = np.loadtxt('hmi.6328.36')
+	phinew = np.zeros(phi.shape, dtype=complex)
+	shiftvalmin = 10000
+	shiftvalmax = 0
+	for i in range(l+1):
+		a1 = finda1(data, l, i)
+		const = pm*a1*1e-9*72*24*3600*daynum
+		phinew[i, :] = sciim.interpolation.shift(phi[i, :].real, const, mode='wrap', order=1) + \
+		1j*sciim.interpolation.shift(phi[i, :].imag, const, mode='wrap', order=1)
+	return phinew
