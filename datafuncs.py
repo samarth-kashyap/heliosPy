@@ -12,6 +12,7 @@ import numpy as np
 import sys
 from math import sqrt, pi
 from numpy.polynomial.legendre import legval
+import scipy.ndimage as sciim
 from astropy.io import fits
 
 twopiemin6 = 2*pi*1e-6
@@ -182,8 +183,19 @@ def separatefreq(phi):
 	phiminus = phi[:, ::-1]
 	return phiplus, phiminus
 
+def finda1(data, l, m):
+	splits = np.array([0.0])
+	L = sqrt(l*(l+1))
+	for i in range(data.shape[0]):
+		if int(data[i,0])==l:
+			for j in range(i, i+30):
+				if int(data[j,1]==0):
+					splits = np.append(splits, data[j, 12:48])
+					totsplit = legval(1.0*m/L, splits)*L
+					return totsplit#-31.7*m
+
 def derotate(phi, l, daynum, pm):
-	data = np.loadtxt('hmi.6328.36')
+	data = np.loadtxt('/home/samarth/leakage/hmi.6328.36')
 	phinew = np.zeros(phi.shape, dtype=complex)
 	shiftvalmin = 10000
 	shiftvalmax = 0
