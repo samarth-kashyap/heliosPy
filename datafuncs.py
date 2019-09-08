@@ -29,9 +29,9 @@ def findfreq(data, l, n, m):
 		m - azimuthal order
 
 	Outputs: (nu_{nlm}, fwhm_{nl}, amp_{nl})
-		nu_{nlm} - eigenfrequency in microHz
+		nu_{nlm} 	- eigenfrequency in microHz
 		fwhm_{nl} - FWHM of the mode in microHz
-		amp_{nl} - Mode amplitude (A_{nl})
+		amp_{nl} 	- Mode amplitude (A_{nl})
 	'''
 	L = sqrt(l*(l+1))
 	try:
@@ -40,9 +40,12 @@ def findfreq(data, l, n, m):
 		print( "MODE NOT FOUND : l = %3s, n = %2s" %( l, n ) )
 		return None, None, None
 	(nu, amp, fwhm) = data[modeindex, 2:5]
-	splits = np.append([0.0], data[modeindex, 12:48])
-	totsplit = legval(1.0*m/L, splits)*L*0.001
-	return nu + totsplit, fwhm, amp
+	if m==0:
+		return nu, fwhm, amp
+	else:
+		splits = np.append([0.0], data[modeindex, 12:48])
+		totsplit = legval(1.0*m/L, splits)*L*0.001
+		return nu + totsplit, fwhm, amp
 
 def lorentzian(omega, fwhm, omegaList):
 	'''
@@ -50,31 +53,37 @@ def lorentzian(omega, fwhm, omegaList):
 	and damping, for a given range of frequencies.
 
 	Inputs:
-		omega	-	peak of the lorentzian in microHz
-		fwhm	- damping rate in microHz
+		omega	    -	peak of the lorentzian in microHz
+		fwhm	    - damping rate in microHz
 		omegaList - array containing range of frequencies in microHz
 
 	Outputs:
 		lorentzian profile - in Hz^{-2}
+	'''
+	return 1.0/((omega - 1j*fwhm/2)**2 - omegaList**2)/twopiemin6**2
 	'''
 	if omega<=omegaList.max() and omega>=omegaList.min():
 		return 1.0/((omega - 1j*fwhm/2)**2 - omegaList**2)/twopiemin6**2
 	else:
 		print("Peak frequency %10.5f outside range (%10.5f, %10.5f)" %(omega, omegaList.min(), omegaList.max()))
 		return 0*omegaList
+	'''
 
 def locatefreq(freq, freqloc):
 	'''
 	Returns the ind, where freq[ind] >= freqloc and freq[ind-1]=<freqloc
+	
 	Inputs:
-		freq - array
+		freq 		- array
 		freqloc - value to be found
+
 	Outpus:
-		ind - index of the array, which corresponds to freqloc
+		ind 		- index of the array, which corresponds to freqloc
 	'''
 	try:
 		ind = 1 + np.where((freq[:-1]<=freqloc) * (freq[1:]>=freqloc))[0][0]
-	except:
+	except IndexError:
+		print(" locatefreq: index not found %10.5e, minfreq = %10.5e, maxfreq = %10.5e" %(freqloc, freq.min(), freq.max()))
 		ind = 0
 	return ind
 
@@ -120,10 +129,12 @@ def loadHMIdata_concat(l, day=6328, nyears=1):
 	Loads time series for a given number of years, 
 	by concatenating the required number of 72-day datasets.
 	Returns the IFFT of the concatenated time series.
+
 	Inputs:
-		l			- (int)	spherical harmonic degree
-		day		- (int) starting day of time series
-		nyears- (int) total number of years
+		l			 - (int)	spherical harmonic degree
+		day		 - (int) starting day of time series
+		nyears - (int) total number of years
+
 	Outputs:
 		phi_{l} - (np.ndarray, ndim = 2)[m, omega], frequency series for different m
 	'''
@@ -150,10 +161,12 @@ def loadHMIdata_avg(l, day=6328, num=1):
 	'''
 	Loads 72-day time series and averages over a given number.
 	Returns the IFFT of the averaged time series.
+
 	Inputs:
 		l			- (int)	spherical harmonic degree
 		day		- (int) starting day of time series - default = 6328
 		num 	- (int) total number of years - default = 1
+
 	Outputs:
 		phi_{l} - (np.ndarray, ndim = 2)[m, omega], frequency series for different m
 	'''
@@ -205,3 +218,57 @@ def derotate(phi, l, daynum, pm):
 		phinew[i, :] = sciim.interpolation.shift(phi[i, :].real, const, mode='wrap', order=1) + \
 		1j*sciim.interpolation.shift(phi[i, :].imag, const, mode='wrap', order=1)
 	return phinew
+
+def hfactor(l, n, m, lprime, nprime, mprime,\
+omegaList, data, normfile, numlw, totleak):
+	'''H_{nln'l'}(\omega) as defined in Hanasoge (2018)
+	Inputs: n, l, m, n', l', m', omegaList
+	Output: H_{ll'nn'mm'}
+	'''
+	'''
+	# Loading the old norms C_{nl}
+	cn = norms(l, n, normfile)
+	cn1 = norms(lprime, nprime, normfile)
+	'''
+	# new norms
+	writedir = '/scratch/samarth/crossSpectra/'
+	cn = np.loadtxt(writedir + "norm_"+str(l).zfill(3)+"_"+str(n).zfill(2))
+	cn1 = np.loadtxt(writedir + "norm_"+str(lprime).zfill(3)+"_"+str(nprime).zfill(2))
+
+	omegasize = omegaList.shape[0]
+	hval = np.zeros(omegasize, dtype=complex)
+	
+	omegaorig1, fwhmorig1, amporig1 = findfreq(data, l, n, m)
+	omegaorig2, fwhmorig2, amporig2 = findfreq(data, lprime, nprime, mprime)
+	lim1m = locatefreq(omegaList, omegaorig1 - fwhmorig1)
+	lim1p = locatefreq(omegaList, omegaorig1 + fwhmorig1)
+	lim2m = locatefreq(omegaList, omegaorig2 - fwhmorig2)
+	lim2p = locatefreq(omegaList, omegaorig2 + fwhmorig2)
+	r1 = lorentzian(omegaorig1, fwhmorig1, omegaList)
+	r2 = lorentzian(omegaorig2, fwhmorig2, omegaList)
+
+	omeganl, fwhm, amp = findfreq(data, l, n, 0)
+	omeganl1, fwhm1, amp1 = findfreq(data, lprime, nprime, 0)
+
+	gamnl = fwhm * twopiemin6
+	gamnl1 = fwhm1 * twopiemin6
+	omeganl = omeganl * twopiemin6
+	omeganl1 = omeganl1 * twopiemin6
+	omegaList = omegaList * twopiemin6
+	
+	n1 = cn * amp**2 * omeganl**2 * gamnl
+	n2 = cn1 * amp1**2 * omeganl1**2 * gamnl1
+	print(f" N1 = {n1}, N2 = {n2}")
+
+	mask = np.zeros(omegasize, dtype=bool)
+	mask[lim1m:lim1p] = True
+	mask[lim2m:lim2p] = True
+	'''
+	print(f"Number of freqs = {mask.sum()}")
+	print(f"omegamin = {omegaList[mask].min()}, omegamax = {omegaList[mask].max()}")
+	print(f"lorentzianmax = {r1[mask].max()}")
+	'''
+	hval[mask] = -2.0*omegaList[mask]*(n2*abs(r2[mask])**2*r1[mask].conjugate() + n1*abs(r1[mask])**2*r2[mask])
+	print(f"hvalsumabs = {abs(hval).sum()}, {np.sum(abs(hval))}")
+	print(f"hvalsum= {(hval).sum()}, {np.sum((hval))}")
+	return hval[mask]
