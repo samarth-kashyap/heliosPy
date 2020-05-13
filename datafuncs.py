@@ -99,14 +99,14 @@ def loadnorms(l, n, year):
 	Outputs:
 		norm - value of the norm C_{nl}
 	'''
-	path = '/scratch/samarth/HMItemp/norms/'
+	path = '/scratch/g.samarth/HMItemp/norms/'
 	prefix = 'HMI_'
 	suffix = '_year_0' + str(year)
 	fname = path + prefix + str(l).zfill(3) + suffix
 	
 	try:
 		norms = np.loadtxt(fname)
-	except:
+	except FileNotFoundError:
 		print("Norm file NOT FOUND : "+fname)
 		return None;
 
@@ -149,8 +149,8 @@ def loadHMIdata_concat(l, day=6328, nyears=1):
 		daynum=1
 	for i in range(daynum):
 		daynew = day + i*72;
-		print("Reading "+'/scratch/jishnu/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')
-		temp = fits.open('/scratch/jishnu/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')[1].data
+		print("Reading "+'/scratch/seismogroup/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')
+		temp = fits.open('/scratch/seismogroup/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')[1].data
 		if i==0:
 			tempnew = temp
 		else:
@@ -178,8 +178,8 @@ def loadHMIdata_avg(l, day=6328, num=1):
 	
 	for i in range(num):
 		daynew = day + i*72;
-		print("Reading "+'/scratch/jishnu/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')
-		tempopen = fits.open('/scratch/jishnu/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')
+		print("Reading "+'/scratch/seismogroup/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')
+		tempopen = fits.open('/scratch/seismogroup/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')
 		temp = tempopen[1].data
 		tempopen.close()
 		if i==0:
