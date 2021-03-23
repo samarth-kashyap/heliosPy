@@ -2,3 +2,4 @@
 *.log
 testing.py
 l1*.py
+*.pyc
