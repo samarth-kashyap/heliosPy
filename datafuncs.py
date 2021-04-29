@@ -224,8 +224,8 @@ def loadHMIdata_concat(l, day=6328, nyears=1):
     Returns the IFFT of the concatenated time series.
 
     Inputs:
-        l            - (int)    spherical harmonic degree
-        day      - (int) starting day of time series
+        l- (int)    spherical harmonic degree
+        day - (int) starting day of time series
         nyears - (int) total number of years
 
     Outputs:
@@ -256,23 +256,32 @@ def loadHMIdata_avg(l, day=6328, num=1):
     Returns the IFFT of the averaged time series.
 
     Inputs:
-        l           - (int) spherical harmonic degree
-        day     - (int) starting day of time series - default = 6328
-        num     - (int) total number of years - default = 1
+    ------
+        l - int
+            spherical harmonic degree
+        day - int
+            starting day of time series - default = 6328
+        num - int
+            total number of years - default = 1
 
-    Outputs:
-        phi_{l} - (np.ndarray, ndim = 2)[m, omega], frequency series for different m
+    Returns:
+    -------
+        phi_{l} - np.ndarray(ndim=2)[m, omega]
+            frequency series for different m
     '''
     try:
         assert num>0
     except AssertionError:
-        print("AssertionError: While calling loadHMIdata_avg(l, day, num) --> num has to be a positive number")
+        print("AssertionError: While calling " +
+              "loadHMIdata_avg(l, day, num) --> num has to be a positive number")
         sys.exit()
     
     for i in range(num):
         daynew = day + i*72;
-        print("Reading "+'/scratch/seismogroup/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')
-        tempopen = fits.open('/scratch/seismogroup/data/HMI/data/HMI_'+str(l).zfill(3)+'_'+str(daynew).zfill(4)+'.fits')
+        datadir = "/scratch/seismogroup/data/HMI/data"
+        fname = f"{datadir}/HMI_{l:03d}_{daynew:04d}.fits"
+        print(f"Reading {fname}")
+        tempopen = fits.open(fname)
         temp = tempopen[1].data
         tempopen.close()
         if i==0:
